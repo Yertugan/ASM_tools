@@ -1,0 +1,91 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit, fopen, fprintf, fclose, scanf              
+     8                                  import exit msvcrt.dll    
+     9                                  import fopen msvcrt.dll
+    10                                  import fprintf msvcrt.dll
+    11                                  import fclose msvcrt.dll
+    12                                  import scanf msvcrt.dll
+    13                                  
+    14                                  
+    15                                  extern findmin
+    16                                  
+    17                                  ; our data is declared here (the variables needed by our program)
+    18                                  segment data use32 class=data
+    19                                      ;Read a string of unsigned numbers in base 10 from keyboard. Determine the minimum value of the string and write it in the file min.txt (it will be created) in 16 base.
+    20                                      
+    21 00000000 6D696E2E74787400            file_name db "min.txt", 0
+    22 00000008 7700                        access_mode db "w", 0
+    23 0000000A FFFFFFFF                    file_descriptor dd -1
+    24                                     
+    25 0000000E 00000000                    n dd 0 
+    26 00000012 FF                          min db 255
+    27 00000013 256400                  	format db "%d", 0
+    28 00000016 257800                      format2 db "%x", 0
+    29                                  
+    30                                  ; our code starts here
+    31                                  segment code use32 class=code
+    32                                      start:
+    33 00000000 B964000000                      mov ecx, 100
+    34                                          
+    35 00000005 68[0E000000]                    push dword n
+    36 0000000A 68[13000000]                    push dword format
+    37 0000000F FF15[00000000]                  call [scanf]       ; call function scanf for reading
+    38 00000015 83C408                          add esp, 4 * 2 
+    39 00000018 8B1D[0E000000]                  mov ebx, [n]
+    40                                          
+    41                                          repeta:
+    42 0000001E 68[0E000000]                        push dword n       ; ! addressa of n, not value
+    43 00000023 68[13000000]                        push dword format
+    44 00000028 FF15[00000000]                      call [scanf]       ; call function scanf for reading
+    45 0000002E 83C408                              add esp, 4 * 2
+    46                                              
+    47 00000031 8B15[0E000000]                      mov edx, [n]
+    48 00000037 83FAFF                              cmp edx, -1
+    49 0000003A 7408                                je final1   
+    50                                              
+    51 0000003C 52                                  push edx
+    52 0000003D E8(00000000)                        call findmin  
+    53                                              
+    54 00000042 E2DA                                loop repeta
+    55                                              
+    56                                          final1:
+    57                                          
+    58 00000044 58                              pop eax
+    59 00000045 A3[0E000000]                    mov [n], eax
+    60                                          
+    61 0000004A 68[08000000]                    push dword access_mode     
+    62 0000004F 68[00000000]                    push dword file_name
+    63 00000054 FF15[00000000]                  call [fopen]
+    64 0000005A 83C408                          add esp, 4*2                ; clean-up the stack
+    65                                  
+    66 0000005D A3[0A000000]                    mov [file_descriptor], eax  ; store the file descriptor returned by fopen
+    67                                          
+    68                                          ; check if fopen() has successfully created the file (EAX != 0)
+    69 00000062 83F800                          cmp eax, 0
+    70 00000065 7429                            je final
+    71                                          
+    72 00000067 FF35[0E000000]                  push dword [n]
+    73                                           
+    74 0000006D 68[16000000]                    push dword format2
+    75 00000072 FF35[0A000000]                  push dword [file_descriptor]
+    76 00000078 FF15[00000000]                  call [fprintf]
+    77 0000007E 83C40C                          add esp, 4*3
+    78                                          
+    79                                          
+    80                                          
+    81 00000081 FF35[0A000000]                  push dword [file_descriptor]
+    82 00000087 FF15[00000000]                  call [fclose]
+    83 0000008D 83C404                          add esp, 4
+    84                                          
+    85                                          
+    86                                          
+    87                                          final:
+    88                                          
+    89                                          ; exit(0)
+    90 00000090 6A00                            push dword 0      ; push the parameter for exit onto the stack
+    91 00000092 FF15[00000000]                  call [exit]       ; call exit to terminate the program

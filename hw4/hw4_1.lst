@@ -1,0 +1,52 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13                                  
+    14                                      ;32) Given the words A, B si C, obtain the byte D as the sum of the integers represented by:
+    15                                      ;the bits 0-4 of A
+    16                                      ;the bits 5-9 of B
+    17                                      ;The byte E is the integer represented by the bits 10-14 of C. Obtain the byte F by computing the subtraction D-E.
+    18 00000000 5777                        a dw 0111011101010111b
+    19 00000002 BE1B                        b dw 0001101110111110b
+    20 00000004 6E6D                        c dw 0110110101101110b
+    21 00000006 00                          d db 0
+    22 00000007 00                          e db 0
+    23 00000008 00                          f db 0
+    24                                  ; our code starts here
+    25                                  segment code use32 class=code
+    26                                      start:
+    27                                          
+    28 00000000 B300                            mov bl, 0 ;computing the result in bl
+    29 00000002 66A1[00000000]                  mov ax, [a] ;ax=a
+    30 00000008 6683E01F                        and ax, 0000000000011111b ;isolating the 0-4bits of ax=a
+    31 0000000C 08C3                            or bl, al
+    32 0000000E 881D[06000000]                  mov [d], bl
+    33                                          
+    34 00000014 668B15[02000000]                mov dx, [b]
+    35 0000001B 6681E2E003                      and dx, 0000001111100000b
+    36 00000020 0815[06000000]                  or [d], dl
+    37                                          
+    38 00000026 668B0D[04000000]                mov cx, [c]
+    39 0000002D 6681E1007C                      and cx, 0111110000000000b
+    40 00000032 B300                            mov bl, 0
+    41 00000034 08CB                            or bl, cl
+    42 00000036 881D[07000000]                  mov [e], bl
+    43                                          
+    44 0000003C 8A1D[06000000]                  mov bl, [d]
+    45 00000042 2A1D[07000000]                  sub bl, [e]
+    46 00000048 881D[08000000]                  mov [f], bl
+    47                                          
+    48                                          
+    49                                          
+    50                                          ; exit(0)
+    51 0000004E 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    52 00000050 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

@@ -1,0 +1,67 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  ;30) A string of words is given. Build two strings of bytes, s1 and s2, in the following way: for each word,
+    13                                  ;if the number of bits 1 from the high byte of the word is larger than the number of bits 1 from its low byte, then s1 will contain the high byte and s2 will contain the low byte of the word
+    14                                  ;if the number of bits 1 from the high byte of the word is equal to the number of bits 1 from its low byte, then s1 will contain the number of bits 1 from the low byte and s2 will contain 0
+    15                                  ;otherwise, s1 will contain the low byte and s2 will contain the high byte of the word.
+    16                                  
+    17                                  segment data use32 class=data
+    18 00000000 020404030501                s dw 0402h, 0304h, 0105h
+    19                                      l equ $-s
+    20 00000006 00<rept>                    s1 times l db 0
+    21 0000000C 00<rept>                    s2 times l db 0
+    22                                  
+    23                                  ; our code starts here
+    24                                  segment code use32 class=code
+    25                                      start:
+    26 00000000 BE[00000000]                    mov esi, s 
+    27 00000005 FC                              cld 
+    28 00000006 B906000000                      mov ecx, l 
+    29                                          
+    30                                          
+    31 0000000B E33C                            jecxz end_prog
+    32                                          
+    33                                          putbyte:
+    34 0000000D 66AD                                lodsw
+    35 0000000F 38E0                                cmp al, ah
+    36 00000011 7F04                                jg putlarge
+    37 00000013 740D                                je putequal
+    38 00000015 7C19                                jl putless
+    39                                          
+    40                                          putlarge:
+    41 00000017 8825[06000000]                      mov [s1], ah
+    42 0000001D A2[0C000000]                        mov [s2], al 
+    43                                              
+    44                                          putequal:
+    45 00000022 B300                                mov bl, 0
+    46 00000024 881D[0C000000]                      mov [s2], bl
+    47 0000002A B164                                mov cl, 100
+    48 0000002C 3C01                                cmp al, 1
+    49 0000002E 720B                                jc cntone
+    50                                          
+    51                                          putless:
+    52 00000030 A2[06000000]                        mov [s1], al
+    53 00000035 8825[06000000]                      mov [s1], ah
+    54                                          
+    55                                          cntone:
+    56 0000003B B264                                mov dl, 100
+    57 0000003D FEC1                                inc cl
+    58 0000003F 28CA                                sub dl, cl
+    59 00000041 8815[06000000]                      mov [s1], dl
+    60                                          
+    61 00000047 E2C4                            loop putbyte
+    62                                          
+    63                                          end_prog:
+    64                                          
+    65                                          ; exit(0)
+    66 00000049 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    67 0000004B FF15[00000000]                  call    [exit]       ; call exit to terminate the program
